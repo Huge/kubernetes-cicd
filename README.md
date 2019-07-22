@@ -6,16 +6,15 @@ Skripty a sablony pre vytvorenie CI/CD projektu.
 
 ### Deployment cez objednavku sluzby
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Felos-tech%2Fkubernetes-cicd%2Fmaster%2Fazure%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FHuge%2Fkubernetes-cicd%2Fmaster%2Fazure%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
-<a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Felos-tech%2Fkubernetes-cicd%2Fmaster%2Fazure%2Fazuredeploy.json" target="_blank">
-    <img src="http://armviz.io/visualizebutton.png"/>
-</a>
+<!–– a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2FHuge%2Fkubernetes-cicd%2Fmaster%2Fazure%2Fazuredeploy.json" target="_blank">    <img src="http://armviz.io/visualizebutton.png"/></a> ––>
 
 #### Prerekvizity
 
-* Registracia aplikacie (service principal) + priradenie role. Do formularu je nutne ziskat udaje ID a Secret key vytvorenej registracie v AD. Navod ako na to: https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal
+* Registracia aplikacie, nastavení *service principal*, tj. [přiřazení role aplikaci](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#assign-the-application-to-a-role), [získání *secret key*](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#create-a-new-application-secret). 
+*App ID* a *Secret key* jsou požadovány pro nasazení aplikace( tlačítkem výše).
 
 #### Troubleshooting
 
@@ -27,7 +26,7 @@ Provisioning moze skoncit nasledujucou chybou: 'The value of parameter orchestra
 az aks get-versions --location westeurope --output table
 ```
 
-A podporovanu verziu zadat do formularu. Podporovane verzie sa casom menia!
+A podporovanu verziu zadat do formularu. Podporovane verzie sa casom menia..:(
 
 ### Manualne vytvorenie clusteru
 
