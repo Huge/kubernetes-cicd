@@ -4,7 +4,7 @@
   "parameters": {
     "auxvmSshPublicKey": {
       "type": "string",
-      "defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA2h4PW71rJ+gQcOuj7H/uhfirCzrcnrb21w60hkf3UsAVmhQZYWpP1c8613bGdq/J2WlfQ2EtVu1JS63zAcn1U0tituwROQXPrFcGrdDM1jRs5P1teUXU5tboOUe1LEOIszG27k6HQsDfDHjMBq4SpV8U+WS16g4UhbfmtMgxIUlw0ixDY6zP2oYpgY1NnH0rfI4L5F1u1nlVskkNCmeTGDy8VD/V1wgajQijQUT48UCrnZsB90Spo19Ix01pDz0eddOXXQZeV/iNWvlwFrPzAMttGmlF37WW+SUVkWnhqenDhGjBFflCKqQ4UXu7BT+OXgH1BmsJ+aT3xEkj/7jZCw== delfin@deneb",
+      "defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJoJu7pd69WA4qWeDw1dUMFceYNwsr7SqbVqvXxNvk5BqLANBHAvyZCnRd3qyjDozMzxjAR/6b0wT5YFermGcM7CPhMYFo7dxPzHZm4bBsp7whVnWLtxEq1dFoo+a7UN3sstxoIMuAcodBHUpSbI74am8TqYD8m9hY2bchOFy7aYKCCm1i3Z1jdf3lG214S/nFKGgVJtZtBf2BkkrrQ2Lxqm+Gt8ic9O57vj4YR9I7A437zaa7IB6q9CXAuEt9cJoa1EFM6CG/DDhAWduGtnowT/LpSIwtDB2wZg9uVMfUGB42ovE/Xp+C8UFWQu3cSod4QBPY2k8As653Mn0f9nf5",
       "metadata": {
         "description": "Configure all linux machines with the SSH public key string, for example 'ssh-rsa AAAAB...snip...UcyupgH azureuser@linuxvm'"
       }
@@ -42,6 +42,10 @@
       "type": "string",
       "defaultValue": "Standard_DS2_v2",
       "allowedValues": [
+        "Standard_B1s",
+        "Standard_B1ms",
+        "Standard_A1_v2",
+        
         "Standard_B2s",
         "Standard_B2ms",
         "Standard_D2s_v3",
@@ -54,7 +58,7 @@
         "Standard_A2"
       ],
       "metadata": {
-        "description": "The virutal machine size to use as kubernetes nodes."
+        "description": "The virutal machine size to use as kubernetes nodes. Added some smaller from https://docs.microsoft.com/en-us/azure/virtual-machines/linux/sizes-general"
       }
     },
     "servicePrincipalAppId": {
@@ -259,10 +263,15 @@
       "value": "[concat('https://application-prod.', replace(replace(reference(variables('bootstrapExtensionName')).outputs.instanceView.value.statuses[0].message, 'Enable succeeded: \n[stdout]\n', ''), '\n[stderr]\n', ''))]",
       "type": "string"
     },
-    "Auxvm ssh": {
+    "Auxvm ssh connection command": {
       "type": "string",
       "value": "[concat('ssh ', variables('adminUsername'), '@', reference(variables('auxvmDeploymentName')).outputs.auxvmFqdn.value)]"
     },
+    "Authenticate kubectl tool via az CLI( not final implementation)": {
+      "type": "string",
+      "value": "[concat('az aks get-credentials --resource-group ', resourceGroup().name ' --name ', variables('aksName'), '--admin']"
+    },
+    
     "Kubernetes master fqdn": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('aksName'))).fqdn]"
