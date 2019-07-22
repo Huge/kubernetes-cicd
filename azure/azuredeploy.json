@@ -13,6 +13,8 @@
       "type": "string",
       "defaultValue": "Standard_DS2_v2",
       "allowedValues": [
+        "Standard_A2_v2",
+        "Standard_A2",
         "Standard_B2s",
         "Standard_B2ms",
         "Standard_D2s_v3",
@@ -20,9 +22,7 @@
         "Standard_DS2_v2",
         "Standard_D2_v2",
         "Standard_DS2",
-        "Standard_D2",
-        "Standard_A2_v2",
-        "Standard_A2"
+        "Standard_D2"
       ],
       "metadata": {
         "description": "The virutal machine size to use as AuxVM."
@@ -42,10 +42,6 @@
       "type": "string",
       "defaultValue": "Standard_DS2_v2",
       "allowedValues": [
-        "Standard_B1s",
-        "Standard_B1ms",
-        "Standard_A1_v2",
-        
         "Standard_B2s",
         "Standard_B2ms",
         "Standard_D2s_v3",
@@ -103,7 +99,7 @@
     },
     "applicationGitUrl": {
       "type": "string",
-      "defaultValue": "https://github.com/elos-tech/openshift-cicd-app",
+      "defaultValue": "https://github.com/Huge/openshift-cicd-app",
       "metadata": {
         "description": "Application source GIT repository URL."
       }
@@ -267,9 +263,9 @@
       "type": "string",
       "value": "[concat('ssh ', variables('adminUsername'), '@', reference(variables('auxvmDeploymentName')).outputs.auxvmFqdn.value)]"
     },
-    "Authenticate kubectl tool via az CLI( not final implementation)": {
+    "Authenticate kubectl tool via az CLI": {
       "type": "string",
-      "value": "[concat('az aks get-credentials --resource-group ', resourceGroup().name ' --name ', variables('aksName'), '--admin']"
+      "value": "[concat('az aks get-credentials --resource-group ', resourceGroup().name, ' --name ', variables('aksName'), ' --admin')]"
     },
     
     "Kubernetes master fqdn": {
