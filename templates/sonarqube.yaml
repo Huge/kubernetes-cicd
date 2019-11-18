@@ -13,6 +13,17 @@ spec:
     requests:
       storage: 5Gi
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: _PREFIX_sonarqube-env-config
+  labels:
+    app: _PREFIX_sonarqube
+data:
+  SONARQUBE_JDBC_USERNAME: _POSTGRES_USER_
+  SONARQUBE_JDBC_PASSWORD: _POSTGRES_PASSWORD_
+  SONARQUBE_JDBC_URL: jdbc:postgresql://_DATABASE_SERVICE_NAME_._COMPONENTS_NAMESPACE_.svc.cluster.local:5432/_POSTGRES_DB_
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -37,15 +48,18 @@ spec:
         app: _PREFIX_sonarqube
     spec:
       containers:
-      - image: docker.io/sonarqube:lts
+      - image: docker.io/sonarqube:7.7-community
         imagePullPolicy: IfNotPresent
         name: sonarqube
         resources: {}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
+        envFrom:
+        - configMapRef:
+            name: _PREFIX_sonarqube-env-config
         volumeMounts:
-          - mountPath: /opt/sonarqube/data
-            name: sonarqube-data
+        - mountPath: /opt/sonarqube/data
+          name: sonarqube-data
       initContainers:
       - name: setup-datadir
         image: alpine:latest
@@ -57,9 +71,9 @@ spec:
         - mountPath: /mnt
           name: sonarqube-data
       volumes:
-        - name: sonarqube-data
-          persistentVolumeClaim:
-            claimName: _PREFIX_sonarqube
+      - name: sonarqube-data
+        persistentVolumeClaim:
+          claimName: _PREFIX_sonarqube
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler

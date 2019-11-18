@@ -29,7 +29,7 @@ spec:
       serviceAccountName: jenkins
       containers:
       - name: jenkins
-        image: openshift/jenkins-2-centos7:latest
+        image: jenkins/jenkins:lts
         ports:
         - containerPort: 8080
         - containerPort: 50000
@@ -45,14 +45,17 @@ spec:
         - name: JAVA_OPTS
           value: "-Djenkins.install.runSetupWizard=false"
         - name: JENKINS_PASSWORD
-          value: "_JENKINS_ADMIN_PASSWORD_"
+          valueFrom:
+            secretKeyRef:
+              name: _JENKINS_ADMIN_PASSWORD_SECRET_
+              key: password
         volumeMounts:
         - mountPath: /var/lib/jenkins
           name: jenkins-data
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "while true; do if curl -f localhost:8080/login &> /dev/null ; then curl -X POST localhost:8080/job/_COMPONENTS_PIPELINE_JOB_NAME_/build --user admin:_JENKINS_ADMIN_PASSWORD_; break; else sleep 5; fi; done"]
+              command: ["/bin/sh", "-c", "for i in $(seq 1 20); do if [ -f /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/nextBuildNumber ]; then NEXT_BUILD_NUMBER=$(cat /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/nextBuildNumber); else NEXT_BUILD_NUMBER=1; fi; if [ $NEXT_BUILD_NUMBER -ge 2 ]; then break; fi; if curl -f localhost:8080/login &> /dev/null ; then curl -X POST localhost:8080/job/_COMPONENTS_PIPELINE_JOB_NAME_/build --user admin:${JENKINS_PASSWORD}; break; else sleep 10; fi; done"]
       initContainers:
       - name: setup-permissions
         image: alpine:latest
@@ -64,7 +67,7 @@ spec:
         - mountPath: /var/lib/jenkins
           name: jenkins-data
       - name: install-plugins
-        image: openshift/jenkins-2-centos7:latest
+        image: jenkins/jenkins:lts
         command:
           - /bin/sh
           - -c
@@ -75,22 +78,16 @@ spec:
         - mountPath: /mnt
           name: jenkins-plugins
       - name: prepare-components-job
-        image: openshift/jenkins-2-centos7:latest
-        command:
-          - /bin/sh
-          - -c
-          - mkdir -p /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/builds; cd /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/builds; touch legacyIds; ln -s ./-1 lastFailedBuild; ln -s ./-1 lastStableBuild; ln -s ./-1 lastSuccessfulBuild; ln -s ./-1 lastUnstableBuild; ln -s ./-1 lastUnsuccessfulBuild; cp /mnt/config.xml /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/
+        image: jenkins/jenkins:lts
+        command: ["/bin/sh", "-c", "if [ -d '/var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_' ]; then exit 0; fi; mkdir -p /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/builds; cd /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/builds; touch legacyIds; ln -s ./-1 lastFailedBuild; ln -s ./-1 lastStableBuild; ln -s ./-1 lastSuccessfulBuild; ln -s ./-1 lastUnstableBuild; ln -s ./-1 lastUnsuccessfulBuild; cp /mnt/config.xml /var/lib/jenkins/jobs/_COMPONENTS_PIPELINE_JOB_NAME_/"]
         volumeMounts:
         - mountPath: /var/lib/jenkins
           name: jenkins-data
         - mountPath: /mnt
           name: components-job
       - name: prepare-app-job
-        image: openshift/jenkins-2-centos7:latest
-        command:
-          - /bin/sh
-          - -c
-          - mkdir -p /var/lib/jenkins/jobs/_APP_PIPELINE_JOB_NAME_/builds; cd /var/lib/jenkins/jobs/_APP_PIPELINE_JOB_NAME_/builds; touch legacyIds; ln -s ./-1 lastFailedBuild; ln -s ./-1 lastStableBuild; ln -s ./-1 lastSuccessfulBuild; ln -s ./-1 lastUnstableBuild; ln -s ./-1 lastUnsuccessfulBuild; cp /mnt/config.xml /var/lib/jenkins/jobs/_APP_PIPELINE_JOB_NAME_/
+        image: jenkins/jenkins:lts
+        command: ["/bin/sh", "-c", "if [ -d '/var/lib/jenkins/jobs/_APP_PIPELINE_JOB_NAME_' ]; then exit 0; fi; mkdir -p /var/lib/jenkins/jobs/_APP_PIPELINE_JOB_NAME_/builds; cd /var/lib/jenkins/jobs/_APP_PIPELINE_JOB_NAME_/builds; touch legacyIds; ln -s ./-1 lastFailedBuild; ln -s ./-1 lastStableBuild; ln -s ./-1 lastSuccessfulBuild; ln -s ./-1 lastUnstableBuild; ln -s ./-1 lastUnsuccessfulBuild; cp /mnt/config.xml /var/lib/jenkins/jobs/_APP_PIPELINE_JOB_NAME_/"]
         volumeMounts:
         - mountPath: /var/lib/jenkins
           name: jenkins-data
@@ -153,7 +150,7 @@ data:
     pam-auth:1.3
     ldap:1.20
     email-ext:2.63
-    kubernetes-cd:0.2.3
+    kubernetes-cd:2.1.2
     azure-commons:0.2.6
 ---
 apiVersion: v1
@@ -176,12 +173,14 @@ data:
           <name></name>
           <resourceVersion></resourceVersion>
         </io.fabric8.jenkins.openshiftsync.BuildConfigProjectProperty>
+        <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty/>
+        <org.jenkinsci.plugins.workflow.job.properties.DisableResumeJobProperty/>
       </properties>
       <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.61.1">
         <script>#!groovy
     
     def source_git_repo      = &apos;https://github.com/elos-tech/kubernetes-cicd.git&apos;
-    def name_prefix          = &apos;cicd-&apos;
+    def name_prefix          = &apos;_PREFIX_&apos;
     def prefix_label         = &apos;PREFIX&apos; // Helper variable for prefix substitution with double sed-ed templates.
     def dns_domain           = &apos;_DNS_ZONE_NAME_&apos;
     def jenkins_namespace    = &quot;${name_prefix}jenkins&quot;
@@ -288,7 +287,15 @@ data:
         // Wait for deployment of sonarqube until postgres is ready to handle requests.
         wait_for_deployment_ready(components_namespace, &quot;${name_prefix}sonar-postgres&quot;)
         
-        create_from_template components_namespace, &quot;templates/sonarqube.yaml _${prefix_label}_ ${name_prefix}&quot;
+        create_from_template components_namespace, &quot;&quot;&quot;templates/sonarqube.yaml \
+          _${prefix_label}_ ${name_prefix} \
+          _POSTGRES_DB_ sonar \
+          _POSTGRES_USER_ sonar \
+          _POSTGRES_PASSWORD_ sonar \
+          _DATABASE_SERVICE_NAME_ postgresql-sonarqube \
+          _COMPONENTS_NAMESPACE_ &quot;${components_namespace}&quot;
+        &quot;&quot;&quot;
+
         create_from_template components_namespace, &quot;&quot;&quot;templates/ingress/tls-ingress.yaml \
           _RESOURCE_NAME_ &quot;${name_prefix}sonarqube&quot; \
           _DNS_NAME_ &quot;sonarqube.${dns_domain}&quot; \
@@ -395,7 +402,7 @@ data:
       sh &quot;&quot;&quot;
         while true;
         do
-          READY=\$(kubectl --namespace $namespace get deployment $deployment --no-headers | awk &apos;{ print \$5}&apos;)
+          READY=\$(kubectl --namespace $namespace get deployment $deployment -o=custom-columns=AVAILABLE:.status.availableReplicas --no-headers)
           echo \$READY
           if [ \$READY -ge 1 ]; then
             break
@@ -439,6 +446,8 @@ data:
           <name></name>
           <resourceVersion></resourceVersion>
         </io.fabric8.jenkins.openshiftsync.BuildConfigProjectProperty>
+        <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty/>
+        <org.jenkinsci.plugins.workflow.job.properties.DisableResumeJobProperty/>
       </properties>
       <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.61.1">
         <script>// Pipeline global variables/parameters
@@ -548,8 +557,10 @@ data:
         def artifactId = null
         def version    = null
         
-        def dev_tag    = null
-        def prod_tag   = null
+#        def dev_tag    = null
+#        def prod_tag   = null
+        // Label for container images and builds for testing.
+        def build_tag  = null
       }
       
       stages {
@@ -587,8 +598,7 @@ data:
                 artifactId = getArtifactIdFromPom(&quot;pom.xml&quot;)
                 version    = getVersionFromPom(&quot;pom.xml&quot;)
                 
-                dev_tag    = &quot;${version}-${BUILD_NUMBER}&quot;
-                prod_tag   = &quot;${version}&quot;
+                build_tag    = &quot;${version}-${BUILD_NUMBER}&quot;
               }
               
               // Setup correct URL to nexus service in config XML file.
@@ -633,7 +643,7 @@ data:
           steps {
             container(&apos;maven&apos;) {
               echo &apos;Running Sonar scans&apos;
-              sh &quot;${mvnCmd} sonar:sonar -Dsonar.host.url=http://${sonarqube_url}:9000 -Dsonar.projectName=${JOB_BASE_NAME} -Dsonar.projectVersion=${dev_tag}&quot;
+              sh &quot;${mvnCmd} sonar:sonar -Dsonar.host.url=http://${sonarqube_url}:9000 -Dsonar.projectName=${JOB_BASE_NAME} -Dsonar.projectVersion=${build_tag}&quot;
             }
           }
         }
@@ -667,11 +677,7 @@ data:
     
                    /kaniko/executor \
                      --context /workspace \
-                     --destination ${acr_hostname}/${prefix}jenkins/tasks:${dev_tag}
-                     
-                   /kaniko/executor \
-                     --context /workspace \
-                     --destination ${acr_hostname}/${prefix}jenkins/tasks:${prod_tag}
+                     --destination ${acr_hostname}/${prefix}jenkins/tasks:${build_tag}
                  &quot;&quot;&quot;
                }
             }
@@ -694,7 +700,7 @@ data:
               create_from_template(tasks_dev_namespace, &quot;&quot;&quot;k8s_templates/tasks-app.yaml \
                 _${prefix_label}_ ${prefix} \
                 _${acr_secret_name_label}_ ${acr_secret_name} \
-                _${image_label}_ ${acr_hostname}/${prefix}jenkins/tasks:${dev_tag}
+                _${image_label}_ ${acr_hostname}/${prefix}jenkins/tasks:${build_tag}
               &quot;&quot;&quot;)
             }
           }
@@ -767,7 +773,7 @@ data:
               create_from_template(tasks_prod_namespace, &quot;&quot;&quot;k8s_templates/tasks-app.yaml \
                 _${prefix_label}_ &quot;${gb_destination}-&quot; \
                 _${acr_secret_name_label}_ ${acr_secret_name} \
-                _${image_label}_ ${acr_hostname}/${prefix}jenkins/tasks:${prod_tag}
+                _${image_label}_ ${acr_hostname}/${prefix}jenkins/tasks:${build_tag}
               &quot;&quot;&quot;)
             }
           }
@@ -837,7 +843,7 @@ data:
       sh &quot;&quot;&quot;
         while true;
         do
-          READY=\$(kubectl --namespace $namespace get deployment $deployment --no-headers | awk &apos;{ print \$5}&apos;)
+          READY=\$(kubectl --namespace $namespace get deployment $deployment -o=custom-columns=AVAILABLE:.status.availableReplicas --no-headers)
           echo \$READY
           if [ \$READY -ge 1 ]; then
             break
