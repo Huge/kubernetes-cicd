@@ -138,7 +138,7 @@
     "auxvmDeploymentName": "auxvm-deployment",
     "aksName": "aks-cluster",
     "aksDnsPrefix": "[concat('aks', uniqueString(resourceGroup().id))]",
-    "artifactsLocation": "[concat('https://raw.githubusercontent.com/elos-tech/kubernetes-cicd/', parameters('gitBranch'), '/')]",
+    "artifactsLocation": "[concat('https://raw.githubusercontent.com/Huge/kubernetes-cicd/', parameters('gitBranch'), '/')]",
     "extensionScript": "bootstrap-wrapper.sh",
     "artifactsLocationSasToken": "",
     "customScriptTemplateUrl": "[uri(variables('artifactsLocation'), concat('azure/nested/customscript.json', variables('artifactsLocationSasToken')))]",
