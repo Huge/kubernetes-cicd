@@ -229,7 +229,8 @@
         "agentPoolProfiles": [
           {
             "name": "agentpool",
-            "count": "[parameters('kubernetesNodesCount')]",
+            "count": 1,
+#	    #"[parameters('kubernetesNodesCount')]",it was, likely not workable thrhough Validation(s)
             "vmSize": "[parameters('kubernetesNodeSize')]",
             "osType": "Linux",
             "storageProfile": "ManagedDisks",
