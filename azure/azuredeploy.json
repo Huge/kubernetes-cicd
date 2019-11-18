@@ -58,7 +58,7 @@
     },
     "kubernetesNodeSize": {
       "type": "string",
-      "defaultValue": "Standard_DS2_v2",
+      "defaultValue": "Standard_A2m_v2",
       "allowedValues": [
         "Standard_B1ms",
         "Standard_B2s",
@@ -80,26 +80,22 @@
     },
     "kubernetesNodesCount": {
       "type": "int",
-      "defaultValue": "2",
-      "allowedValues": [
-        "1",
-        "2",
-        "3",
-        "4"      ],
+      "defaultValue": 2,
+      "allowedValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ],
       "metadata": {
         "description": "Nodes of the cluster explicated, good for devs.."
       }
     },
     "servicePrincipalAppId": {
       "type": "string",
-      "defaultValue": "ddaac2d7-ef70-4ae0-8bc9-b4c2b92abe03",
+      "defaultValue": "e82b2878-bdb3-449c-877d-100115361bde",
       "metadata": {
         "description": "Service Principal App ID (also called Client ID) that has contributor rights to the subscription used for this deployment. It is used by the Kubernetes cluster to dynamically manage resources (e.g. user-defined load balancers)."
       }
     },
     "servicePrincipalAppKey": {
       "type": "securestring",
-      "defaultValue": "/z.t1Inb9JlzLdWjZe/4hZ:mgG4L]5w/",
+      "defaultValue": "DB7Bpb4[It@L=Como0[JlryXxaMj8wjS",
       "metadata": {
         "description": "Service Principal App Key (also called Client Secret) that has contributor rights to the subscription used for this deployment. It is used by the Kubernetes cluster to dynamically manage resources (e.g. user-defined load balancers)."
       }
