@@ -2,7 +2,7 @@
 
 {
   cd /root
-  git clone https://github.com/elos-tech/kubernetes-cicd.git 
+  git clone https://github.com/Huge/kubernetes-cicd.git 
   cd kubernetes-cicd
 
   # Just for troubleshooting.
